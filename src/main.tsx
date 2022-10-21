@@ -1,10 +1,24 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
+import React from 'react';
+import { render } from 'react-dom';
+import AppContainer from './AppContainer';
+import store from './app/store';
+import { Provider } from 'react-redux';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-)
+import { worker } from './api/server';
+
+// Wrap app rendering so we can wait for the mock API to initialize
+async function start() {
+  // Start our mock API server
+  await worker.start({ onUnhandledRequest: 'bypass' });
+
+  render(
+    <React.StrictMode>
+      <Provider store={store}>
+        <AppContainer />
+      </Provider>
+    </React.StrictMode>,
+    document.getElementById('root')
+  );
+}
+
+start();

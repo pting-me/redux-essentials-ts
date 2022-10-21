@@ -1,0 +1,22 @@
+{
+  "root": true,
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js"],
+      "extends": ["eslint:recommended", "prettier"],
+      "parserOptions": {
+        "ecmaVersion": 2020
+      },
+      "rules": {}
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": ["plugin:@typescript-eslint/recommended", "prettier"],
+      "parser": "@typescript-eslint/parser",
+      "plugins": ["@typescript-eslint"],
+      "rules": {
+        "@typescript-eslint/no-empty-interface": "off"
+      }
+    }
+  ]
+}
