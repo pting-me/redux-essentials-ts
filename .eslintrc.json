@@ -2,7 +2,7 @@
   "root": true,
   "overrides": [
     {
-      "files": ["*.ts", "*.tsx", "*.js"],
+      "files": ["*.js"],
       "extends": ["eslint:recommended", "prettier"],
       "parserOptions": {
         "ecmaVersion": 2020
@@ -11,11 +11,30 @@
     },
     {
       "files": ["*.ts", "*.tsx"],
-      "extends": ["plugin:@typescript-eslint/recommended", "prettier"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:react/recommended",
+        "plugin:react/jsx-runtime",
+        "plugin:react-hooks/recommended",
+        "prettier"
+      ],
       "parser": "@typescript-eslint/parser",
       "plugins": ["@typescript-eslint"],
       "rules": {
-        "@typescript-eslint/no-empty-interface": "off"
+        "@typescript-eslint/no-empty-interface": "off",
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "react-redux",
+                "importNames": ["useSelector", "useDispatch"],
+                "message": "Please use useAppSelector and useAppDispatch from src/app/hooks.ts"
+              }
+            ]
+          }
+        ]
       }
     }
   ]
