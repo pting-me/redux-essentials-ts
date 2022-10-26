@@ -7,6 +7,8 @@ import {
 } from 'react-router-dom';
 
 import { Navbar } from './app-lib/Navbar';
+import { AddPostForm } from './features/posts/AddPostForm';
+import { PostsList } from './features/posts/PostsList';
 
 const App: FC = () => {
   return (
@@ -17,9 +19,10 @@ const App: FC = () => {
           <Route
             path="/"
             element={
-              <section>
-                <h2>Welcome to the Redux Essentials example app!</h2>
-              </section>
+              <>
+                <AddPostForm />
+                <PostsList />
+              </>
             }
           />
           <Route path="/*" element={<Navigate to="/" />} />
