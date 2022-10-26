@@ -3,7 +3,7 @@ import { ChangeEvent, FC, useState } from 'react';
 import { nanoid } from '@reduxjs/toolkit';
 
 import { postAdded } from './postsSlice';
-import { useAppDispatch } from '../../app/hooks';
+import { useAppDispatch } from '../../app-lib/hooks';
 
 export const AddPostForm: FC = () => {
   const [title, setTitle] = useState('');

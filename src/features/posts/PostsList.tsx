@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { useAppSelector } from '../../app/hooks';
+import { useAppSelector } from '../../app-lib/hooks';
 
 export const PostsList: FC = () => {
   const posts = useAppSelector((state) => state.posts);
