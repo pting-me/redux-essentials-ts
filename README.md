@@ -37,9 +37,8 @@ This is a TypeScript version of the [Redux Essentials Tutorial](https://github.c
 
 ### Code changes
 
-- `App.js` has been renamed to `AppContainer.tsx`
-  - This is to avoid naming conflicts (e.g. if `app/index.ts` were to be added).
-  - IMO it's better to renamed `app` to something like `lib`, but that would require more code changes. This change is easier to follow.
+- `src/app` has been renamed to `src/app-lib`
+  - This is to avoid naming conflicts (e.g. if `src/app/index.ts` were to be added).
 - Function component declarations (e.g. `function MyComponent()`) have been changed to arrow function expressions (e.g. `const MyComponent: FC<Props> =`)
   - This facilitates better typing practices, and is more common in modern code.
   - The two are not strictly the same. See [here](https://exploringjs.com/impatient-js/ch_callables.html) for more details.

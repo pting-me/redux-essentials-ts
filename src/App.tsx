@@ -6,7 +6,7 @@ import {
   Navigate,
 } from 'react-router-dom';
 
-import { Navbar } from './app/Navbar';
+import { Navbar } from './app-lib/Navbar';
 
 const AppContainer: FC = () => {
   return (

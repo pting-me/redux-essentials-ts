@@ -4,7 +4,6 @@ import { nanoid } from '@reduxjs/toolkit';
 import { faker } from '@faker-js/faker';
 import seedrandom from 'seedrandom';
 import { Client, Server as MockSocketServer } from 'mock-socket';
-// import { setRandom } from 'txtgen';
 import type { JsonValue } from 'type-fest';
 
 import { parseISO } from 'date-fns';
@@ -40,7 +39,6 @@ if (useSeededRNG) {
   }
 
   rng = seedrandom(randomSeedString);
-  // setRandom(rng);
   faker.seed(seedDate.getTime());
 }
 
@@ -141,15 +139,6 @@ interface PostPostsReq {
 }
 
 interface GetPostByIdReq {
-  params: {
-    postId: string;
-  };
-}
-
-interface PatchPostByIdReq {
-  body: {
-    id?: string;
-  };
   params: {
     postId: string;
   };
