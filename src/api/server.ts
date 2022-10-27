@@ -7,7 +7,16 @@ import { Client, Server as MockSocketServer } from 'mock-socket';
 import type { JsonValue } from 'type-fest';
 
 import { parseISO } from 'date-fns';
-import { Post, Reaction } from '../types';
+import {
+  GetPostsByPostIdCommentsParams,
+  GetPostsByPostIdParams,
+  isReactionKey,
+  PatchPostsByPostIdParams,
+  PatchPostsByPostIdRequest,
+  PostPostsByPostIdReactionsParams,
+  PostPostsByPostIdReactionsRequest,
+  PostPostsRequest,
+} from '../types';
 
 const NUM_USERS = 3;
 const POSTS_PER_USER = 3;
@@ -91,6 +100,7 @@ export const db = factory({
 });
 
 type Database = typeof db;
+type DbPost = ReturnType<typeof db.post.create>;
 
 const createUserData = () => {
   const firstName = faker.name.firstName();
@@ -124,56 +134,59 @@ for (let i = 0; i < NUM_USERS; i++) {
   }
 }
 
-const serializePost = (post: Post) => ({
+const serializePost = (post: DbPost) => ({
   ...post,
   user: post.user?.id,
 });
 
+/* Random Notifications Generation */
+
+const notificationTemplates = [
+  'poked you',
+  'says hi!',
+  `is glad we're friends`,
+  'sent you a gift',
+];
+
+function generateRandomNotifications(
+  since: string | undefined,
+  numNotifications: number,
+  db: Database
+) {
+  const now = new Date();
+  let pastDate: Date;
+
+  if (since) {
+    pastDate = parseISO(since);
+  } else {
+    pastDate = new Date(now.valueOf());
+    pastDate.setMinutes(pastDate.getMinutes() - 15);
+  }
+
+  // Create N random notifications. We won't bother saving these
+  // in the DB - just generate a new batch and return them.
+  const notifications = [...Array(numNotifications)].map(() => {
+    const user = randomFromArray(db.user.getAll());
+    const template = randomFromArray(notificationTemplates);
+    return {
+      id: nanoid(),
+      date: faker.date.between(pastDate, now).toISOString(),
+      message: template,
+      user: user.id,
+    };
+  });
+
+  return notifications;
+}
+
 /* MSW REST API Handlers */
-
-interface PostPostsReq {
-  body: {
-    content: string;
-    user: string;
-  };
-}
-
-interface GetPostByIdReq {
-  params: {
-    postId: string;
-  };
-}
-
-interface PatchPostByIdReq {
-  body: {
-    id?: string;
-  };
-  params: {
-    postId: string;
-  };
-}
-
-interface GetPostCommentsByIdReq {
-  params: {
-    postId: string;
-  };
-}
-
-interface PostPostReactionsByIdReq {
-  body: {
-    reaction: keyof Omit<Required<Reaction>, 'id' | 'post'>;
-  };
-  params: {
-    postId: string;
-  };
-}
 
 export const handlers = [
   rest.get('/fakeApi/posts', function (req, res, ctx) {
     const posts = db.post.getAll().map(serializePost);
     return res(ctx.delay(ARTIFICIAL_DELAY_MS), ctx.json(posts));
   }),
-  rest.post('/fakeApi/posts', function (req: PostPostsReq, res, ctx) {
+  rest.post<PostPostsRequest>('/fakeApi/posts', function (req, res, ctx) {
     const requestData = req.body;
 
     if (requestData.content === 'error') {
@@ -197,36 +210,42 @@ export const handlers = [
     const post = db.post.create({ date, user, reactions });
     return res(ctx.delay(ARTIFICIAL_DELAY_MS), ctx.json(serializePost(post)));
   }),
-  rest.get('/fakeApi/posts/:postId', function (req: GetPostByIdReq, res, ctx) {
-    const post = db.post.findFirst({
-      where: { id: { equals: req.params.postId } },
-    });
+  rest.get<undefined, GetPostsByPostIdParams>(
+    '/fakeApi/posts/:postId',
+    function (req, res, ctx) {
+      const post = db.post.findFirst({
+        where: { id: { equals: req.params.postId } },
+      });
 
-    if (!post) {
-      return res(ctx.status(404), ctx.json('Post not found!'));
+      if (!post) {
+        return res(ctx.status(404), ctx.json('Post not found!'));
+      }
+
+      return res(ctx.delay(ARTIFICIAL_DELAY_MS), ctx.json(serializePost(post)));
     }
+  ),
+  rest.patch<PatchPostsByPostIdRequest, PatchPostsByPostIdParams>(
+    '/fakeApi/posts/:postId',
+    (req, res, ctx) => {
+      // id needs to be thrown away
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, ...data } = req.body;
+      const updatedPost = db.post.update({
+        where: { id: { equals: req.params.postId } },
+        data,
+      });
 
-    return res(ctx.delay(ARTIFICIAL_DELAY_MS), ctx.json(serializePost(post)));
-  }),
-  rest.patch('/fakeApi/posts/:postId', (req: PatchPostByIdReq, res, ctx) => {
-    // id needs to be thrown away
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, ...data } = req.body;
-    const updatedPost = db.post.update({
-      where: { id: { equals: req.params.postId } },
-      data,
-    });
+      if (!updatedPost) {
+        return res(ctx.status(404), ctx.json('Post not found!'));
+      }
 
-    if (!updatedPost) {
-      return res(ctx.status(404), ctx.json('Post not found!'));
+      return res(ctx.json(serializePost(updatedPost)));
     }
+  ),
 
-    return res(ctx.json(serializePost(updatedPost)));
-  }),
-
-  rest.get(
+  rest.get<undefined, GetPostsByPostIdCommentsParams>(
     '/fakeApi/posts/:postId/comments',
-    (req: GetPostCommentsByIdReq, res, ctx) => {
+    (req, res, ctx) => {
       const post = db.post.findFirst({
         where: { id: { equals: req.params.postId } },
       });
@@ -242,45 +261,49 @@ export const handlers = [
     }
   ),
 
-  rest.post(
-    '/fakeApi/posts/:postId/reactions',
-    (req: PostPostReactionsByIdReq, res, ctx) => {
-      const postId = req.params.postId;
-      const reaction = req.body.reaction;
-      const post = db.post.findFirst({
-        where: { id: { equals: postId } },
-      });
+  rest.post<
+    PostPostsByPostIdReactionsRequest,
+    PostPostsByPostIdReactionsParams
+  >('/fakeApi/posts/:postId/reactions', (req, res, ctx) => {
+    const postId = req.params.postId;
+    const reaction = req.body.reaction;
+    const post = db.post.findFirst({
+      where: { id: { equals: postId } },
+    });
 
-      if (!post) {
-        return res(ctx.status(404), ctx.json('Post not found!'));
-      }
-
-      if (!post.reactions) {
-        return res(ctx.status(404), ctx.json('Post reactions not found!'));
-      }
-
-      const currentReactionCount = post.reactions[reaction] ?? 0;
-
-      const updatedPost = db.post.update({
-        where: { id: { equals: postId } },
-        data: {
-          reactions: {
-            ...post.reactions,
-            [reaction]: currentReactionCount + 1,
-          },
-        },
-      });
-
-      if (!updatedPost) {
-        return res(ctx.status(500), ctx.json('Error updating post!'));
-      }
-
-      return res(
-        ctx.delay(ARTIFICIAL_DELAY_MS),
-        ctx.json(serializePost(updatedPost))
-      );
+    if (!post) {
+      return res(ctx.status(404), ctx.json('Post not found!'));
     }
-  ),
+
+    if (!post.reactions) {
+      return res(ctx.status(404), ctx.json('Post reactions not found!'));
+    }
+
+    if (!isReactionKey(reaction)) {
+      return res(ctx.status(404), ctx.json('Not a valid reaction!'));
+    }
+
+    const currentReactionCount = post.reactions[reaction] ?? 0;
+
+    const updatedPost = db.post.update({
+      where: { id: { equals: postId } },
+      data: {
+        reactions: {
+          ...post.reactions,
+          [reaction]: currentReactionCount + 1,
+        },
+      },
+    });
+
+    if (!updatedPost) {
+      return res(ctx.status(500), ctx.json('Error updating post!'));
+    }
+
+    return res(
+      ctx.delay(ARTIFICIAL_DELAY_MS),
+      ctx.json(serializePost(updatedPost))
+    );
+  }),
   rest.get('/fakeApi/notifications', (req, res, ctx) => {
     const numNotifications = getRandomInt(1, 5);
 
@@ -345,43 +368,3 @@ socketServer.on('connection', (socket) => {
     }
   });
 });
-
-/* Random Notifications Generation */
-
-const notificationTemplates = [
-  'poked you',
-  'says hi!',
-  `is glad we're friends`,
-  'sent you a gift',
-];
-
-function generateRandomNotifications(
-  since: string | undefined,
-  numNotifications: number,
-  db: Database
-) {
-  const now = new Date();
-  let pastDate: Date;
-
-  if (since) {
-    pastDate = parseISO(since);
-  } else {
-    pastDate = new Date(now.valueOf());
-    pastDate.setMinutes(pastDate.getMinutes() - 15);
-  }
-
-  // Create N random notifications. We won't bother saving these
-  // in the DB - just generate a new batch and return them.
-  const notifications = [...Array(numNotifications)].map(() => {
-    const user = randomFromArray(db.user.getAll());
-    const template = randomFromArray(notificationTemplates);
-    return {
-      id: nanoid(),
-      date: faker.date.between(pastDate, now).toISOString(),
-      message: template,
-      user: user.id,
-    };
-  });
-
-  return notifications;
-}
