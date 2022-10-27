@@ -8,7 +8,9 @@ import {
 
 import { Navbar } from './app-lib/Navbar';
 import { AddPostForm } from './features/posts/AddPostForm';
+import { EditPostForm } from './features/posts/EditPostForm';
 import { PostsList } from './features/posts/PostsList';
+import { SinglePostPage } from './features/posts/SimplePostPage';
 
 const App: FC = () => {
   return (
@@ -25,6 +27,8 @@ const App: FC = () => {
               </>
             }
           />
+          <Route path="/posts/:postId" element={<SinglePostPage />} />
+          <Route path="/editPost/:postId" element={<EditPostForm />} />
           <Route path="/*" element={<Navigate to="/" />} />
         </Routes>
       </div>
