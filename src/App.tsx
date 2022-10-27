@@ -8,7 +8,7 @@ import {
 
 import { Navbar } from './app-lib/Navbar';
 
-const AppContainer: FC = () => {
+const App: FC = () => {
   return (
     <Router>
       <Navbar />
@@ -29,4 +29,4 @@ const AppContainer: FC = () => {
   );
 };
 
-export default AppContainer;
+export default App;
