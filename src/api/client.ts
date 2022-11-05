@@ -53,8 +53,8 @@ client.get = function (
 
 client.post = function (
   endpoint: RequestInfo | URL,
-  body: RequestInit['body'],
+  body: unknown,
   customConfig: RequestInit = {}
 ) {
-  return client(endpoint, { ...customConfig, body });
+  return client(endpoint, { ...customConfig, body } as RequestInit);
 };
