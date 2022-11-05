@@ -1,18 +1,25 @@
-import { FC, ReactNode, useEffect } from 'react';
+import { EntityId } from '@reduxjs/toolkit';
+import { FC, memo, ReactNode, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../app-lib/hooks';
 import { Spinner } from '../../components/Spinner';
 import { PostAuthor } from './PostAuthor';
-import { selectAllPosts, fetchPosts, Post } from './postsSlice';
+import { fetchPosts, selectPostById, selectPostIds } from './postsSlice';
 import { ReactionButtons } from './ReactionButtons';
 import { TimeAgo } from './TimeAgo';
 
 interface PostExcerptProps {
-  post: Post;
+  postId: EntityId;
 }
 
-const PostExcerpt: FC<PostExcerptProps> = (props) => {
-  const { post } = props;
+const BasePostExcerpt: FC<PostExcerptProps> = (props) => {
+  const { postId } = props;
+  const post = useAppSelector((state) => selectPostById(state, postId));
+
+  if (!post) {
+    return null;
+  }
+
   return (
     <article className="post-excerpt">
       <h3>{post.title}</h3>
@@ -30,9 +37,11 @@ const PostExcerpt: FC<PostExcerptProps> = (props) => {
   );
 };
 
+const PostExcerpt = memo(BasePostExcerpt);
+
 export const PostsList: FC = () => {
   const dispatch = useAppDispatch();
-  const posts = useAppSelector(selectAllPosts);
+  const orderedPostIds = useAppSelector(selectPostIds);
 
   const postStatus = useAppSelector((state) => state.posts.status);
   const error = useAppSelector((state) => state.posts.error);
@@ -48,13 +57,8 @@ export const PostsList: FC = () => {
   if (postStatus === 'loading') {
     content = <Spinner text="Loading..." />;
   } else if (postStatus === 'succeeded') {
-    // Sort posts in reverse chronological order by datetime string
-    const orderedPosts = posts
-      .slice()
-      .sort((a, b) => b.date.localeCompare(a.date));
-
-    content = orderedPosts.map((post) => (
-      <PostExcerpt key={post.id} post={post} />
+    content = orderedPostIds.map((postId) => (
+      <PostExcerpt key={postId} postId={postId} />
     ));
   } else if (postStatus === 'failed') {
     content = <div>{error}</div>;

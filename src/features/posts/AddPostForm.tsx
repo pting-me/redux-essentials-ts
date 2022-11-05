@@ -2,6 +2,7 @@ import { ChangeEvent, FC, useState } from 'react';
 
 import { addNewPost } from './postsSlice';
 import { useAppDispatch, useAppSelector } from '../../app-lib/hooks';
+import { selectAllUsers } from '../users/usersSlice';
 
 export const AddPostForm: FC = () => {
   const [title, setTitle] = useState('');
@@ -11,7 +12,7 @@ export const AddPostForm: FC = () => {
 
   const dispatch = useAppDispatch();
 
-  const users = useAppSelector((state) => state.users);
+  const users = useAppSelector(selectAllUsers);
 
   const onTitleChanged = (e: ChangeEvent<HTMLInputElement>) =>
     setTitle(e.target.value);
