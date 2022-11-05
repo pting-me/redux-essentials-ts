@@ -51,6 +51,7 @@ export interface UserDto {
 export type GetPostsResponse = PostDto[];
 
 export interface PostPostsRequest {
+  title: string;
   content: string;
   user: string;
 }

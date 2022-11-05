@@ -3,6 +3,7 @@ import { render } from 'react-dom';
 import App from './App';
 import store from './app-lib/store';
 import { Provider } from 'react-redux';
+import { fetchUsers } from './features/users/usersSlice';
 import { worker } from './api/server';
 import './main.css';
 
@@ -10,6 +11,8 @@ import './main.css';
 async function start() {
   // Start our mock API server
   await worker.start({ onUnhandledRequest: 'bypass' });
+
+  store.dispatch(fetchUsers());
 
   render(
     <React.StrictMode>
